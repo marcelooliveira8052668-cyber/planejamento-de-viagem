@@ -10,17 +10,18 @@ let controleRota;
 let camadaServicos = [];
 let listaDeGastosPlanilha = [];
 
-// Parâmetros de cálculo de viagem
+// Parâmetros de cálculo de viagem (Altere se achar necessário)
 const PRECO_GASOLINA = 5.85;
 const KM_POR_LITRO = 10;
 const TAXA_PEDAGIO_POR_100KM = 14.00;
 
 function inicializarMapa() {
-    mapa = L.map('mapa').setView([-19.9167, -43.9345], 6); 
+    mapa = L.map('mapa').setView([-19.9167, -43.9345], 6); // Foca na região central do Brasil
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+        attribution: '&copy; OpenStreetMap'
     }).addTo(mapa);
 
+    // Carrega dados anteriores salvos para o usuário não perder nada no F5
     carregarDadosLocalStorage();
 }
 
@@ -43,10 +44,9 @@ btnCalcular.addEventListener('click', function() {
 
 async function calcularRotaComParada(orig, parada, dest) {
     try {
-        if (controleRota) { 
-            mapa.removeControl(controleRota); 
-        }
+        if (controleRota) { mapa.removeControl(controleRota); }
 
+        // Busca coordenadas na internet para os 3 pontos
         const coordOrig = await buscarCoordenada(orig);
         const coordParada = await buscarCoordenada(parada);
         const coordDest = await buscarCoordenada(dest);
@@ -56,6 +56,7 @@ async function calcularRotaComParada(orig, parada, dest) {
             return;
         }
 
+        // Desenha a rota ligando Ponto A -> Ponto B -> Ponto C pelas estradas
         controleRota = L.Routing.control({
             waypoints: [coordOrig, coordParada, coordDest],
             router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
@@ -68,7 +69,6 @@ async function calcularRotaComParada(orig, parada, dest) {
         }).addTo(mapa);
 
     } catch (err) {
-        console.error(err);
         alert("Erro ao traçar rota.");
     }
 }
@@ -81,7 +81,7 @@ async function buscarCoordenada(texto) {
             return L.latLng(dados[0].lat, dados[0].lon);
         }
     } catch (e) {
-        console.error(e);
+        console.error("Erro na busca de coordenadas: ", e);
     }
     return null;
 }
@@ -96,19 +96,30 @@ function exibirCustosViagem(km) {
     const custoPedagio = (km / 100) * TAXA_PEDAGIO_POR_100KM;
     document.getElementById('txtPedagio').innerText = "R$ " + custoPedagio.toFixed(2);
 
-    // Links externos corrigidos sem travar o código
+    // =======================================================
+    // ATUALIZAÇÃO DOS LINKS EXTERNOS PARA GOOGLE MAPS E WAZE
+    // =======================================================
     const orig = document.getElementById('inputOrigem').value;
     const parada = document.getElementById('inputParada').value;
     const dest = document.getElementById('inputDestino').value;
 
+    // URL Direta e limpa do Google Maps com suporte a destinos intermediários
     const urlGoogle = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&waypoints=${encodeURIComponent(parada)}&travelmode=driving`;
+    
+    // O Waze não aceita multiplas paradas via string, então foca na navegação direta do destino final
     const urlWaze = `https://waze.com/ul?q=${encodeURIComponent(dest)}&navigate=yes`;
 
-    document.getElementById('linkGoogleMaps').href = urlGoogle;
-    document.getElementById('linkWaze').href = urlWaze;
+    // Atribui os links nos botões correspondentes do arquivo HTML
+    const btnGoogle = document.getElementById('linkGoogleMaps');
+    const btnWaze = document.getElementById('linkWaze');
+
+    if (btnGoogle) btnGoogle.href = urlGoogle;
+    if (btnWaze) btnWaze.href = urlWaze;
 }
 
-// Planilha de Gastos
+// ==========================================
+// GERENCIADOR DA PLANILHA DE GASTOS DIÁRIOS
+// ==========================================
 btnAdicionarGasto.addEventListener('click', function() {
     const h = parseFloat(document.getElementById('gastoHotel').value) || 0;
     const r = parseFloat(document.getElementById('gastoRestaurante').value) || 0;
@@ -122,8 +133,10 @@ btnAdicionarGasto.addEventListener('click', function() {
     const novoGastoItem = { hotel: h, restaurante: r, posto: p };
     listaDeGastosPlanilha.push(novoGastoItem);
 
+    // Salva a lista atualizada
     localStorage.setItem('listaGastosPlanilha', JSON.stringify(listaDeGastosPlanilha));
 
+    // Limpa os campos de digitação
     document.getElementById('gastoHotel').value = "";
     document.getElementById('gastoRestaurante').value = "";
     document.getElementById('gastoPosto').value = "";
@@ -145,7 +158,7 @@ function renderizarTabelaPlanilha() {
             <td>R$ ${gasto.hotel.toFixed(2)}</td>
             <td>R$ ${gasto.restaurante.toFixed(2)}</td>
             <td>R$ ${gasto.posto.toFixed(2)}</td>
-            <td>R$ ${totalDoDia.toFixed(2)}</td>
+            <td style="font-weight: bold;">R$ ${totalDoDia.toFixed(2)}</td>
         `;
         corpoTabelaGastos.appendChild(novaLinha);
     });
@@ -153,7 +166,9 @@ function renderizarTabelaPlanilha() {
     document.getElementById('txtTotalGeral').innerText = "R$ " + somaTotalFérias.toFixed(2);
 }
 
-// Marcadores de Serviços de Apoio
+// ==========================================
+// BUSCADOR DE SERVIÇOS NA ÁREA DO MAPA
+// ==========================================
 function buscarServico(tipo) {
     camadaServicos.forEach(m => mapa.removeLayer(m));
     camadaServicos = [];
@@ -169,10 +184,14 @@ function buscarServico(tipo) {
         const marker = L.marker([lat, lng]).addTo(mapa).bindPopup(`<b>${emoji} ${nome} encontrado!</b>`);
         camadaServicos.push(marker);
     }
+    alert(`Buscando ${nome}s ao redor da visão atual do mapa!`);
 }
 
-// Carregamento de Memória
+// ==========================================
+// NAVEGAÇÃO DE IMAGENS E LOCALSTORAGE
+// ==========================================
 function carregarDadosLocalStorage() {
+    // 1. Carrega Rota
     const o = localStorage.getItem('origTxt');
     const p = localStorage.getItem('paradaTxt');
     const d = localStorage.getItem('destTxt');
@@ -183,12 +202,14 @@ function carregarDadosLocalStorage() {
         calcularRotaComParada(o, p, d);
     }
 
+    // 2. Carrega Planilha de Gastos
     const g = localStorage.getItem('listaGastosPlanilha');
     if (g) {
         listaDeGastosPlanilha = JSON.parse(g);
         renderizarTabelaPlanilha();
     }
 
+    // 3. Carrega Foto
     const f = localStorage.getItem('fotoSalva');
     if (f) { areaFoto.src = f; areaFoto.style.display = 'block'; }
 }

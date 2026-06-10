@@ -22,11 +22,11 @@
             <div class="formulario-rota">
                 <div class="campo">
                     <label>📍 Ponto de Partida (Origem):</label>
-                    <input type="text" id="inputOrigem" placeholder="Origem" value="">
+                    <input type="text" id="inputOrigem" placeholder="Origem" value="Origem">
                 </div>
                 <div class="campo">
                     <label>💤 Parada para Dormir (Intermediário):</label>
-                    <input type="text" id="inputParada" placeholder="Parada" value="">
+                    <input type="text" id="inputParada" placeholder="Paradas" value="">
                 </div>
                 <div class="campo">
                     <label>🏁 Destino Final (Chegada):</label>
@@ -51,14 +51,13 @@
                         <td id="txtPedagio" class="valor-gasto">-</td>
                     </tr>
                 </table>
+
+                <div class="botoes-externos" style="display: flex; gap: 10px; margin-top: 15px;">
+                    <a id="linkGoogleMaps" target="_blank" class="btn-externo btn-google">🗺️ Abrir no Google Maps</a>
+                    <a id="linkWaze" target="_blank" class="btn-externo btn-waze">🚙 Abrir no Waze</a>
+                </div>
             </div>
         </section>
-
-        <div class="botoes-externos" style="display: flex; gap: 10px; margin-top: 15px;">
-        <a id="linkGoogleMaps" target="_blank" class="btn-externo btn-google">🗺️ Abrir no Google Maps</a>
-        <a id="linkWaze" target="_blank" class="btn-externo btn-waze">🚙 Abrir no Waze</a>
-    </div>
-</div>
 
         <section class="card">
             <h2>🗺️ Mapa e Serviços no Caminho</h2>
