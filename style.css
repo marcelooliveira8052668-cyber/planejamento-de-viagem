@@ -50,3 +50,21 @@ header p { font-size: 12px; opacity: 0.9; margin-top: 5px; }
     .grupo-inputs { flex-direction: row; }
     header h1 { font-size: 24px; }
 }
+
+/* Estilos para os botões do Google Maps e Waze */
+.btn-externo {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none;
+    color: white !important;
+    cursor: pointer;
+    display: inline-block;
+}
+.btn-google { background-color: #4285F4; }
+.btn-google:hover { background-color: #357ae8; }
+.btn-waze { background-color: #33CCFF; color: #000 !important; }
+.btn-waze:hover { background-color: #29b6f6; }
