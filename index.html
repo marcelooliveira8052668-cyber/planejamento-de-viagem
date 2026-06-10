@@ -1,294 +1,169 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RotaFácil - Planejador de Viagens</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  </head>
+  </head>
+  <body>
+    <header class="rota-header">
+      <div class="logo">
+        <i class="fa-solid fa-map-location-dot"></i> RotaFácil
+      </div>
+      <div class="user-controls">
+        <button id="btn-login" class="btn-auth">
+          <i class="fa-solid fa-user"></i> Entrar
+        </button>
+      </div>
+    </header>
 
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <main class="main-container">
+      <section class="control-panel" aria-labelledby="titulo-painel">
+        <h2 id="titulo-painel">Planeje Sua Rota</h2>
 
-<title>Travel Planner Pro</title>
-
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="style.css">
-
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-</head>
-
-<body>
-
-<div class="layout">
-
-    <!-- MENU -->
-
-    <aside class="sidebar">
-
-        <h2>🚗 Travel Planner</h2>
-
-        <nav>
-
-            <a href="#">🏠 Dashboard</a>
-
-            <a href="#">🗺️ Nova Viagem</a>
-
-            <a href="#">⭐ Favoritos</a>
-
-            <a href="#">🕒 Histórico</a>
-
-            <a href="#">⛽ Postos</a>
-
-            <a href="#">🏨 Hotéis</a>
-
-            <a href="#">🍔 Restaurantes</a>
-
-            <a href="#">⚙️ Configurações</a>
-
-        </nav>
-
-    </aside>
-
-    <!-- CONTEÚDO -->
-
-    <div class="conteudo">
-
-        <header class="topbar">
-
-            <div class="topbar-esquerda">
-
-                <h1>🚗 Travel Planner Pro</h1>
-
-                <p>Planeje sua viagem completa</p>
-
+        <div class="route-form">
+          <div class="input-group">
+            <label for="origem">Origem</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-circle-dot icon-origem"></i>
+              <input type="text" id="origem" placeholder="Ex: São Paulo, SP" required />
             </div>
+          </div>
 
-            <div class="topbar-direita">
+          <div class="invert-container">
+            <button id="btn-inverter" aria-label="Inverter Origem e Parada" title="Inverter Origem e Parada">
+              <i class="fa-solid fa-arrows-up-down"></i>
+            </button>
+            <span class="invert-label">Inverter Origem/Parada</span>
+          </div>
 
-                <input
-                type="text"
-                placeholder="Pesquisar cidade..."
-                class="pesquisa">
-
-                <div class="perfil">
-                    👤 Marcelo
-                </div>
-
+          <div class="input-group">
+            <label for="parada">Parada <span class="opcional">(Opcional)</span></label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-location-pin icon-parada"></i>
+              <input type="text" id="parada" placeholder="Ex: Aparecida, SP" />
             </div>
-
-        </header>
-
-        <main>
-
-            <div class="dashboard">
-
-                <!-- DADOS DA VIAGEM -->
-
-                <section class="formulario">
-
-                    <h2>📍 Dados da Viagem</h2>
-
-                    <input
-                    type="text"
-                    id="origem"
-                    placeholder="Origem">
-
-                    <input
-                    type="text"
-                    id="destino"
-                    placeholder="Destino">
-
-                    <input
-                    type="number"
-                    id="consumo"
-                    placeholder="Consumo do veículo (Km/L)">
-
-                    <input
-                    type="number"
-                    id="gasolina"
-                    placeholder="Preço da gasolina">
-
-                    <select>
-
-                        <option>Tipo do Veículo</option>
-                        <option>Carro</option>
-                        <option>Moto</option>
-                        <option>Van</option>
-                        <option>Caminhão</option>
-
-                    </select>
-
-                    <input
-                    type="number"
-                    placeholder="Quantidade de passageiros">
-
-                    <button id="btnCalcular">
-                        Calcular Viagem
-                    </button>
-
-                </section>
-
-                <!-- MAPA -->
-
-                <section class="mapa">
-
-                    <h2>🗺️ Mapa</h2>
-<div id="mapa"></div>
-
-                </section>
-
-                <!-- RESUMO -->
-
-                <section class="resultado">
-
-                    <h2>📊 Resumo</h2>
-
-                    <p>
-                        📏 Distância:
-                        <span id="distancia">--</span>
-                    </p>
-
-                    <p>
-                        ⏱ Tempo:
-                        <span id="tempo">--</span>
-                    </p>
-
-                    <p>
-                        ⛽ Combustível:
-                        <span id="combustivel">--</span>
-                    </p>
-
-                    <p>
-                        🛣 Pedágio:
-                        <span id="pedagio">--</span>
-                    </p>
-
-                </section>
-
-                <!-- CUSTOS -->
-
-                <section class="custos">
-
-                    <h2>💰 Custos da Viagem</h2>
-
-                    <div class="card-info">
-                        Combustível: R$ 0,00
-                    </div>
-
-                    <div class="card-info">
-                        Pedágios: R$ 0,00
-                    </div>
-
-                    <div class="card-info">
-                        Custo Total: R$ 0,00
-                    </div>
-
-                    <div class="card-info">
-                        Custo por Passageiro: R$ 0,00
-                    </div>
-
-                </section>
-
-                <!-- CLIMA -->
-
-                <section class="clima">
-
-                    <h2>🌦️ Clima</h2>
-
-                    <div class="card-info">
-                        Origem: --
-                    </div>
-
-                    <div class="card-info">
-                        Destino: --
-                    </div>
-
-                </section>
-
-                <!-- PARADAS -->
-
-                <section class="paradas">
-
-                    <h2>📍 Paradas na Rota</h2>
-
-                    <div class="card-info">⛽ Postos</div>
-
-                    <div class="card-info">🏨 Hotéis</div>
-
-                    <div class="card-info">🍔 Restaurantes</div>
-
-                    <div class="card-info">☕ Cafeterias</div>
-
-                    <div class="card-info">🚻 Banheiros</div>
-
-                    <div class="card-info">🚑 Hospitais</div>
-
-                </section>
-
-                <!-- FAVORITOS -->
-
-                <section class="favoritos">
-
-                    <h2>⭐ Favoritos</h2>
-
-                    <div class="card-info">
-                        🏠 Casa → Trabalho
-                    </div>
-
-                    <div class="card-info">
-                        🏖️ São Paulo → Santos
-                    </div>
-
-                    <div class="card-info">
-                        🌴 São Paulo → Rio de Janeiro
-                    </div>
-
-                </section>
-
-                <!-- HISTÓRICO -->
-
-                <section class="historico">
-
-                    <h2>🕒 Histórico</h2>
-
-                    <div class="card-info">
-                        Última viagem calculada
-                    </div>
-
-                    <div class="card-info">
-                        Viagem anterior
-                    </div>
-
-                    <div class="card-info">
-                        Viagem mais acessada
-                    </div>
-
-                </section>
-
-                <!-- NAVEGAÇÃO -->
-
-                <section class="navegacao">
-
-                    <h2>📱 Navegação</h2>
-
-                    <button class="btn-waze">
-                        📱 Abrir no Waze
-                    </button>
-
-                    <button class="btn-google">
-                        🗺️ Abrir no Google Maps
-                    </button>
-
-                </section>
-
+          </div>
+
+          <div class="input-group">
+            <label for="destino">Destino</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-location-dot icon-destino"></i>
+              <input type="text" id="destino" placeholder="Ex: Rio de Janeiro, RJ" required />
             </div>
+          </div>
 
-        </main>
+          <button id="btn-calcular" class="btn-primary">Calcular Rota</button>
+        </div>
 
-    </div>
+        <div class="results-display">
+          <h3>Resultados da Viagem</h3>
+          <div class="grid-resultados">
+            <div class="card-res">
+              <span class="res-label">Distância Total</span>
+              <strong id="res-distancia">-- km</strong>
+            </div>
+            <div class="card-res">
+              <span class="res-label">Tempo Estimado</span>
+              <strong id="res-tempo">--h --min</strong>
+            </div>
+            <div class="card-res">
+              <span class="res-label">Custo de Pedágios</span>
+              <strong id="res-pedagio">R$ --</strong>
+            </div>
+            <div class="card-res">
+              <span class="res-label">Gasto com Gasolina</span>
+              <strong id="res-gasolina">R$ --</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js"></script>
+      <section class="map-poi-panel" aria-label="Mapa e pontos de interesse">
+        <div id="map" role="application" aria-label="Mapa interativo da rota">
+          <div class="map-placeholder">
+            <i class="fa-solid fa-map"></i>
+            <p>O mapa aparecerá aqui após o cálculo da rota</p>
+          </div>
+        </div>
 
-</body>
+        <div class="poi-section">
+          <div class="poi-tabs" role="tablist">
+            <button class="tab-btn active" role="tab" aria-selected="true" data-type="hospedagem">
+              <i class="fa-solid fa-hotel"></i> Hotéis
+            </button>
+            <button class="tab-btn" role="tab" aria-selected="false" data-type="restaurantes">
+              <i class="fa-solid fa-utensils"></i> Restaurantes
+            </button>
+            <button class="tab-btn" role="tab" aria-selected="false" data-type="postos">
+              <i class="fa-solid fa-gas-pump"></i> Postos
+            </button>
+          </div>
+
+          <div id="poi-results" class="poi-cards-container">
+            <p class="poi-aviso">
+              Calcule uma rota para ver os locais próximos.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="history-photos-section">
+      <div class="container-inferior">
+        <div class="historico-box">
+          <h2>
+            <i class="fa-solid fa-clock-rotate-left"></i> Minhas Rotas Gravadas
+          </h2>
+          <ul id="lista-rotas" class="lista-estilizada">
+            <li class="item-vazio">Nenhuma rota salva ainda.</li>
+          </ul>
+        </div>
+
+        <div class="diario-box">
+          <h2>
+            <i class="fa-solid fa-camera-retro"></i> Diário de Bordo (Fotos)
+          </h2>
+          <div class="upload-container">
+            <label for="foto-upload" class="custom-file-upload">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Escolher Fotos das Paradas
+            </label>
+            <input type="file" id="foto-upload" multiple accept="image/*" />
+          </div>
+          <div id="preview-fotos" class="preview-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+      // Suas credenciais do Firebase integradas com sucesso!
+      const firebaseConfig = {
+        apiKey: "AIzaSyADOJt6tLDSBm7PSa2h830YcVDukbS87yU",
+        authDomain: "workflow-pro-4d27a.firebaseapp.com",
+        projectId: "workflow-pro-4d27a",
+        storageBucket: "workflow-pro-4d27a.firebasestorage.app",
+        messagingSenderId: "792481006303",
+        appId: "1:792481006303:web:0381d003a359b723789f6a",
+        measurementId: "G-Y9B7ESZ537"
+      };
+
+      // Inicializa o Firebase e o Firestore
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Disponibiliza as ferramentas globalmente para o script.js usar
+      window.db = db;
+      window.firestoreConvert = { collection, addDoc, getDocs, serverTimestamp, query, orderBy };
+    </script>
+
+    <script src="script.js"></script>
+  </body>
 </html>
