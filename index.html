@@ -1,169 +1,92 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RotaFácil - Planejador de Viagens</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="style.css" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculador de Rotas e Custos</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  </head>
-  </head>
-  <body>
-    <header class="rota-header">
-      <div class="logo">
-        <i class="fa-solid fa-map-location-dot"></i> RotaFácil
-      </div>
-      <div class="user-controls">
-        <button id="btn-login" class="btn-auth">
-          <i class="fa-solid fa-user"></i> Entrar
-        </button>
-      </div>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+</head>
+<body>
+
+    <header>
+        <h1>Calculador de Rotas Inteligente</h1>
+        <p>Trace seu caminho, calcule combustível, pedágios e gerencie suas fotos</p>
     </header>
 
-    <main class="main-container">
-      <section class="control-panel" aria-labelledby="titulo-painel">
-        <h2 id="titulo-painel">Planeje Sua Rota</h2>
-
-        <div class="route-form">
-          <div class="input-group">
-            <label for="origem">Origem</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-circle-dot icon-origem"></i>
-              <input type="text" id="origem" placeholder="Ex: São Paulo, SP" required />
+    <main class="container">
+        
+        <section class="card">
+            <h2>🚗 Planejar Novo Trajeto</h2>
+            <p class="instrucoes">Digite as cidades ou endereços de partida e de chegada para calcular.</p>
+            
+            <div class="formulario-rota">
+                <div class="campo">
+                    <label>📍 Origem (Início):</label>
+                    <input type="text" id="inputOrigem" placeholder="Ex: São Paulo, SP" value="São Paulo, SP">
+                </div>
+                <div class="campo">
+                    <label>🏁 Destino (Chegada):</label>
+                    <input type="text" id="inputDestino" placeholder="Ex: Rio de Janeiro, RJ" value="Campinas, SP">
+                </div>
+                <button id="btnCalcular" class="btn-sucesso">🚀 Calcular Rota e Custos</button>
             </div>
-          </div>
 
-          <div class="invert-container">
-            <button id="btn-inverter" aria-label="Inverter Origem e Parada" title="Inverter Origem e Parada">
-              <i class="fa-solid fa-arrows-up-down"></i>
-            </button>
-            <span class="invert-label">Inverter Origem/Parada</span>
-          </div>
-
-          <div class="input-group">
-            <label for="parada">Parada <span class="opcional">(Opcional)</span></label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-location-pin icon-parada"></i>
-              <input type="text" id="parada" placeholder="Ex: Aparecida, SP" />
+            <div id="painelCustos" class="painel-custos" style="display: none;">
+                <h3>📊 Estimativa de Gastos da Viagem</h3>
+                <table class="tabela-financeira">
+                    <tr>
+                        <td><strong>Distância Total:</strong></td>
+                        <td id="txtDistancia">-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>⛽ Gasto de Gasolina:</strong></td>
+                        <td id="txtGasolina" class="valor-gasto">-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🛣️ Estimativa de Pedágios:</strong></td>
+                        <td id="txtPedagio" class="valor-gasto">-</td>
+                    </tr>
+                    <tr class="linha-total">
+                        <td><strong>💰 Custo Total Estimado:</strong></td>
+                        <td id="txtTotal">-</td>
+                    </tr>
+                </table>
             </div>
-          </div>
+        </section>
 
-          <div class="input-group">
-            <label for="destino">Destino</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-location-dot icon-destino"></i>
-              <input type="text" id="destino" placeholder="Ex: Rio de Janeiro, RJ" required />
+        <section class="card">
+            <h2>🗺️ Mapa do Percurso</h2>
+            <div class="botoes-servicos">
+                <button onclick="buscarServico('restaurant')" class="btn-servico">🍽️ Ver Restaurantes Próximos</button>
+                <button onclick="buscarServico('hotel')" class="btn-servico">🏨 Ver Hotéis Próximos</button>
+                <button onclick="buscarServico('gas_station')" class="btn-servico">⛽ Ver Postos de Gasolina</button>
             </div>
-          </div>
+            <div id="mapa"></div>
+        </section>
 
-          <button id="btn-calcular" class="btn-primary">Calcular Rota</button>
-        </div>
-
-        <div class="results-display">
-          <h3>Resultados da Viagem</h3>
-          <div class="grid-resultados">
-            <div class="card-res">
-              <span class="res-label">Distância Total</span>
-              <strong id="res-distancia">-- km</strong>
+        <section class="card">
+            <h2>📷 Anexar Foto do Trajeto</h2>
+            <div class="upload-area">
+                <label for="inputFoto" class="btn-upload">📁 Escolher Foto</label>
+                <input type="file" id="inputFoto" accept="image/*" style="display: none;">
+                <button id="btnLimparFoto" class="btn-danger-outline">Remover Foto</button>
             </div>
-            <div class="card-res">
-              <span class="res-label">Tempo Estimado</span>
-              <strong id="res-tempo">--h --min</strong>
+            <div class="preview-container">
+                <img id="areaFoto" src="" alt="Sua foto aparecerá aqui" style="display: none;">
             </div>
-            <div class="card-res">
-              <span class="res-label">Custo de Pedágios</span>
-              <strong id="res-pedagio">R$ --</strong>
-            </div>
-            <div class="card-res">
-              <span class="res-label">Gasto com Gasolina</span>
-              <strong id="res-gasolina">R$ --</strong>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="map-poi-panel" aria-label="Mapa e pontos de interesse">
-        <div id="map" role="application" aria-label="Mapa interativo da rota">
-          <div class="map-placeholder">
-            <i class="fa-solid fa-map"></i>
-            <p>O mapa aparecerá aqui após o cálculo da rota</p>
-          </div>
-        </div>
+        <section class="card card-danger">
+            <h2>🛠️ Limpar Histórico do Site</h2>
+            <button id="btnLimparRotas" class="btn-danger">🗑️ Apagar Rota Atual e Redefinir Site</button>
+        </section>
 
-        <div class="poi-section">
-          <div class="poi-tabs" role="tablist">
-            <button class="tab-btn active" role="tab" aria-selected="true" data-type="hospedagem">
-              <i class="fa-solid fa-hotel"></i> Hotéis
-            </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-type="restaurantes">
-              <i class="fa-solid fa-utensils"></i> Restaurantes
-            </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-type="postos">
-              <i class="fa-solid fa-gas-pump"></i> Postos
-            </button>
-          </div>
-
-          <div id="poi-results" class="poi-cards-container">
-            <p class="poi-aviso">
-              Calcule uma rota para ver os locais próximos.
-            </p>
-          </div>
-        </div>
-      </section>
     </main>
 
-    <section class="history-photos-section">
-      <div class="container-inferior">
-        <div class="historico-box">
-          <h2>
-            <i class="fa-solid fa-clock-rotate-left"></i> Minhas Rotas Gravadas
-          </h2>
-          <ul id="lista-rotas" class="lista-estilizada">
-            <li class="item-vazio">Nenhuma rota salva ainda.</li>
-          </ul>
-        </div>
-
-        <div class="diario-box">
-          <h2>
-            <i class="fa-solid fa-camera-retro"></i> Diário de Bordo (Fotos)
-          </h2>
-          <div class="upload-container">
-            <label for="foto-upload" class="custom-file-upload">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Escolher Fotos das Paradas
-            </label>
-            <input type="file" id="foto-upload" multiple accept="image/*" />
-          </div>
-          <div id="preview-fotos" class="preview-grid"></div>
-        </div>
-      </div>
-    </section>
-
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-      // Suas credenciais do Firebase integradas com sucesso!
-      const firebaseConfig = {
-        apiKey: "AIzaSyADOJt6tLDSBm7PSa2h830YcVDukbS87yU",
-        authDomain: "workflow-pro-4d27a.firebaseapp.com",
-        projectId: "workflow-pro-4d27a",
-        storageBucket: "workflow-pro-4d27a.firebasestorage.app",
-        messagingSenderId: "792481006303",
-        appId: "1:792481006303:web:0381d003a359b723789f6a",
-        measurementId: "G-Y9B7ESZ537"
-      };
-
-      // Inicializa o Firebase e o Firestore
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-
-      // Disponibiliza as ferramentas globalmente para o script.js usar
-      window.db = db;
-      window.firestoreConvert = { collection, addDoc, getDocs, serverTimestamp, query, orderBy };
-    </script>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     <script src="script.js"></script>
-  </body>
+</body>
 </html>
