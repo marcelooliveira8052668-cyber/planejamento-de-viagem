@@ -91,6 +91,23 @@ function exibirCustosViagem(km) {
 
     const custoPedagio = (km / 100) * TAXA_PEDAGIO_POR_100KM;
     document.getElementById('txtPedagio').innerText = "R$ " + custoPedagio.toFixed(2);
+
+    // ==========================================
+    // INTEGRAÇÃO DOS LINKS DO GOOGLE MAPS E WAZE
+    // ==========================================
+    const orig = document.getElementById('inputOrigem').value;
+    const parada = document.getElementById('inputParada').value;
+    const dest = document.getElementById('inputDestino').value;
+
+    // Gera o link oficial do Google Maps com os 3 pontos conectados
+    const urlGoogle = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&waypoints=${encodeURIComponent(parada)}&travelmode=driving`;
+    
+    // O Waze não aceita paradas por link de texto, então traça a rota direta para o destino final
+    const urlWaze = `https://waze.com/ul?q=${encodeURIComponent(dest)}&navigate=yes`;
+
+    // Aplica as URLs geradas direto nas tags do HTML
+    document.getElementById('linkGoogleMaps').href = urlGoogle;
+    document.getElementById('linkWaze').href = urlWaze;
 }
 
 // ==========================================
@@ -134,7 +151,7 @@ function renderizarTabelaPlanilha() {
             <td>R$ ${gasto.hotel.toFixed(2)}</td>
             <td>R$ ${gasto.restaurante.toFixed(2)}</td>
             <td>R$ ${gasto.posto.toFixed(2)}</td>
-            <strong><td>R$ ${totalDoDia.toFixed(2)}</td></strong>
+            <td>R$ ${totalDoDia.toFixed(2)}</td>
         `;
         corpoTabelaGastos.appendChild(novaLinha);
     });
