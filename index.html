@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Travel Planner Pro</title>
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- MENU -->
+
+    <aside class="sidebar">
+
+        <h2>🚗 Travel Planner</h2>
+
+        <nav>
+
+            <a href="#">🏠 Dashboard</a>
+
+            <a href="#">🗺️ Nova Viagem</a>
+
+            <a href="#">⭐ Favoritos</a>
+
+            <a href="#">🕒 Histórico</a>
+
+            <a href="#">⛽ Postos</a>
+
+            <a href="#">🏨 Hotéis</a>
+
+            <a href="#">🍔 Restaurantes</a>
+
+            <a href="#">⚙️ Configurações</a>
+
+        </nav>
+
+    </aside>
+
+    <!-- CONTEÚDO -->
+
+    <div class="conteudo">
+
+        <header class="topbar">
+
+            <div class="topbar-esquerda">
+
+                <h1>🚗 Travel Planner Pro</h1>
+
+                <p>Planeje sua viagem completa</p>
+
+            </div>
+
+            <div class="topbar-direita">
+
+                <input
+                type="text"
+                placeholder="Pesquisar cidade..."
+                class="pesquisa">
+
+                <div class="perfil">
+                    👤 Marcelo
+                </div>
+
+            </div>
+
+        </header>
+
+        <main>
+
+            <div class="dashboard">
+
+                <!-- DADOS DA VIAGEM -->
+
+                <section class="formulario">
+
+                    <h2>📍 Dados da Viagem</h2>
+
+                    <input
+                    type="text"
+                    id="origem"
+                    placeholder="Origem">
+
+                    <input
+                    type="text"
+                    id="destino"
+                    placeholder="Destino">
+
+                    <input
+                    type="number"
+                    id="consumo"
+                    placeholder="Consumo do veículo (Km/L)">
+
+                    <input
+                    type="number"
+                    id="gasolina"
+                    placeholder="Preço da gasolina">
+
+                    <select>
+
+                        <option>Tipo do Veículo</option>
+                        <option>Carro</option>
+                        <option>Moto</option>
+                        <option>Van</option>
+                        <option>Caminhão</option>
+
+                    </select>
+
+                    <input
+                    type="number"
+                    placeholder="Quantidade de passageiros">
+
+                    <button id="btnCalcular">
+                        Calcular Viagem
+                    </button>
+
+                </section>
+
+                <!-- MAPA -->
+
+                <section class="mapa">
+
+                    <h2>🗺️ Mapa</h2>
+<div id="mapa"></div>
+
+                </section>
+
+                <!-- RESUMO -->
+
+                <section class="resultado">
+
+                    <h2>📊 Resumo</h2>
+
+                    <p>
+                        📏 Distância:
+                        <span id="distancia">--</span>
+                    </p>
+
+                    <p>
+                        ⏱ Tempo:
+                        <span id="tempo">--</span>
+                    </p>
+
+                    <p>
+                        ⛽ Combustível:
+                        <span id="combustivel">--</span>
+                    </p>
+
+                    <p>
+                        🛣 Pedágio:
+                        <span id="pedagio">--</span>
+                    </p>
+
+                </section>
+
+                <!-- CUSTOS -->
+
+                <section class="custos">
+
+                    <h2>💰 Custos da Viagem</h2>
+
+                    <div class="card-info">
+                        Combustível: R$ 0,00
+                    </div>
+
+                    <div class="card-info">
+                        Pedágios: R$ 0,00
+                    </div>
+
+                    <div class="card-info">
+                        Custo Total: R$ 0,00
+                    </div>
+
+                    <div class="card-info">
+                        Custo por Passageiro: R$ 0,00
+                    </div>
+
+                </section>
+
+                <!-- CLIMA -->
+
+                <section class="clima">
+
+                    <h2>🌦️ Clima</h2>
+
+                    <div class="card-info">
+                        Origem: --
+                    </div>
+
+                    <div class="card-info">
+                        Destino: --
+                    </div>
+
+                </section>
+
+                <!-- PARADAS -->
+
+                <section class="paradas">
+
+                    <h2>📍 Paradas na Rota</h2>
+
+                    <div class="card-info">⛽ Postos</div>
+
+                    <div class="card-info">🏨 Hotéis</div>
+
+                    <div class="card-info">🍔 Restaurantes</div>
+
+                    <div class="card-info">☕ Cafeterias</div>
+
+                    <div class="card-info">🚻 Banheiros</div>
+
+                    <div class="card-info">🚑 Hospitais</div>
+
+                </section>
+
+                <!-- FAVORITOS -->
+
+                <section class="favoritos">
+
+                    <h2>⭐ Favoritos</h2>
+
+                    <div class="card-info">
+                        🏠 Casa → Trabalho
+                    </div>
+
+                    <div class="card-info">
+                        🏖️ São Paulo → Santos
+                    </div>
+
+                    <div class="card-info">
+                        🌴 São Paulo → Rio de Janeiro
+                    </div>
+
+                </section>
+
+                <!-- HISTÓRICO -->
+
+                <section class="historico">
+
+                    <h2>🕒 Histórico</h2>
+
+                    <div class="card-info">
+                        Última viagem calculada
+                    </div>
+
+                    <div class="card-info">
+                        Viagem anterior
+                    </div>
+
+                    <div class="card-info">
+                        Viagem mais acessada
+                    </div>
+
+                </section>
+
+                <!-- NAVEGAÇÃO -->
+
+                <section class="navegacao">
+
+                    <h2>📱 Navegação</h2>
+
+                    <button class="btn-waze">
+                        📱 Abrir no Waze
+                    </button>
+
+                    <button class="btn-google">
+                        🗺️ Abrir no Google Maps
+                    </button>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
