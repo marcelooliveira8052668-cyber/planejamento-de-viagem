@@ -2,13 +2,14 @@ const btnCalcular = document.getElementById('btnCalcular');
 const btnAdicionarGasto = document.getElementById('btnAdicionarGasto');
 const btnLimparTudo = document.getElementById('btnLimparTudo');
 const inputFoto = document.getElementById('inputFoto');
-const areaFoto = document.getElementById('areaFoto');
+const areaFoto = document.getElementById('areaFoto'); // O container onde as fotos vão aparecer
 const corpoTabelaGastos = document.getElementById('corpoTabelaGastos');
 
 let mapa;
 let controleRota;
 let camadaServicos = [];
 let listaDeGastosPlanilha = [];
+let listaDeFotosSalvas = []; // Nova lista para aceitar múltiplas fotos!
 
 // Parâmetros de cálculo de viagem (Altere se achar necessário)
 const PRECO_GASOLINA = 5.85;
@@ -18,7 +19,7 @@ const TAXA_PEDAGIO_POR_100KM = 14.00;
 function inicializarMapa() {
     mapa = L.map('mapa').setView([-19.9167, -43.9345], 6); // Foca na região central do Brasil
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
+        attribution: '© OpenStreetMap'
     }).addTo(mapa);
 
     // Carrega dados anteriores salvos para o usuário não perder nada no F5
@@ -103,13 +104,9 @@ function exibirCustosViagem(km) {
     const parada = document.getElementById('inputParada').value;
     const dest = document.getElementById('inputDestino').value;
 
-    // URL Direta e limpa do Google Maps com suporte a destinos intermediários
     const urlGoogle = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(orig)}&destination=${encodeURIComponent(dest)}&waypoints=${encodeURIComponent(parada)}&travelmode=driving`;
-    
-    // O Waze não aceita multiplas paradas via string, então foca na navegação direta do destino final
     const urlWaze = `https://waze.com/ul?q=${encodeURIComponent(dest)}&navigate=yes`;
 
-    // Atribui os links nos botões correspondentes do arquivo HTML
     const btnGoogle = document.getElementById('linkGoogleMaps');
     const btnWaze = document.getElementById('linkWaze');
 
@@ -133,10 +130,8 @@ btnAdicionarGasto.addEventListener('click', function() {
     const novoGastoItem = { hotel: h, restaurante: r, posto: p };
     listaDeGastosPlanilha.push(novoGastoItem);
 
-    // Salva a lista atualizada
     localStorage.setItem('listaGastosPlanilha', JSON.stringify(listaDeGastosPlanilha));
 
-    // Limpa os campos de digitação
     document.getElementById('gastoHotel').value = "";
     document.getElementById('gastoRestaurante').value = "";
     document.getElementById('gastoPosto').value = "";
@@ -188,7 +183,69 @@ function buscarServico(tipo) {
 }
 
 // ==========================================
-// NAVEGAÇÃO DE IMAGENS E LOCALSTORAGE
+// 📷 SISTEMA ATUALIZADO DE ARMAZENAMENTO DE FOTOS
+// ==========================================
+
+// Função responsável por desenhar a galeria de fotos na tela
+function renderizarFotosGaleria() {
+    const containerPreview = document.querySelector('.preview-container');
+    containerPreview.innerHTML = ""; // Limpa a área antes de redesenhar
+
+    if (listaDeFotosSalvas.length === 0) {
+        containerPreview.innerHTML = '<p style="color: #64748b; font-size: 13px;">Nenhuma foto anexada ainda.</p>';
+        return;
+    }
+
+    // Cria elementos HTML de imagem dinamicamente para cada foto da lista
+    listaDeFotosSalvas.forEach((fotoBase64, index) => {
+        const divFoto = document.createElement('div');
+        divFoto.style.position = 'relative';
+        divFoto.style.display = 'inline-block';
+        divFoto.style.margin = '5px';
+
+        divFoto.innerHTML = `
+            <img src="${fotoBase64}" style="max-width: 130px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1;">
+            <button onclick="removerFotoIndividual(${index})" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; font-weight: bold;">X</button>
+        `;
+        containerPreview.appendChild(divFoto);
+    });
+}
+
+// Evento disparado quando você clica em "Anexar Foto" e escolhe fotos como foto1.jpg, foto2.jpg
+inputFoto.addEventListener('change', function(e) {
+    const arquivos = e.target.files;
+    
+    if (arquivos) {
+        // Laço de repetição para conseguir ler múltiplos arquivos de uma vez só
+        Array.from(arquivos).forEach(arquivo => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Converte a imagem física local em uma String de dados segura (Base64)
+                listaDeFotosSalvas.push(event.target.result);
+                localStorage.setItem('galeriaFotosViagem', JSON.stringify(listaDeFotosSalvas));
+                renderizarFotosGaleria();
+            };
+            reader.readAsDataURL(arquivo);
+        });
+    }
+});
+
+// Remove apenas a foto que você clicar no botãozinho "X"
+function removerFotoIndividual(index) {
+    listaDeFotosSalvas.splice(index, 1);
+    localStorage.setItem('galeriaFotosViagem', JSON.stringify(listaDeFotosSalvas));
+    renderizarFotosGaleria();
+}
+
+document.getElementById('btnLimparFoto').addEventListener('click', function() {
+    listaDeFotosSalvas = [];
+    localStorage.removeItem('galeriaFotosViagem');
+    renderizarFotosGaleria();
+    alert("Todas as lembranças visuais foram removidas!");
+});
+
+// ==========================================
+// LOCALSTORAGE GERAL DA PÁGINA
 // ==========================================
 function carregarDadosLocalStorage() {
     // 1. Carrega Rota
@@ -209,27 +266,15 @@ function carregarDadosLocalStorage() {
         renderizarTabelaPlanilha();
     }
 
-    // 3. Carrega Foto
-    const f = localStorage.getItem('fotoSalva');
-    if (f) { areaFoto.src = f; areaFoto.style.display = 'block'; }
-}
-
-inputFoto.addEventListener('change', function(e) {
-    const arquivo = e.target.files[0];
-    if (arquivo) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            localStorage.setItem('fotoSalva', event.target.result);
-            areaFoto.src = event.target.result;
-            areaFoto.style.display = 'block';
-        };
-        reader.readAsDataURL(arquivo);
+    // 3. Carrega a Galeria de Fotos Multiplas
+    const fotos = localStorage.getItem('galeriaFotosViagem');
+    if (fotos) {
+        listaDeFotosSalvas = JSON.parse(fotos);
+        renderizarFotosGaleria();
+    } else {
+        renderizarFotosGaleria();
     }
-});
-
-document.getElementById('btnLimparFoto').addEventListener('click', function() {
-    localStorage.removeItem('fotoSalva'); areaFoto.style.display = 'none';
-});
+}
 
 btnLimparTudo.addEventListener('click', function() {
     localStorage.clear();
