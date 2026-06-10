@@ -1,167 +1,215 @@
 const btnCalcular = document.getElementById('btnCalcular');
-const btnLimparRotas = document.getElementById('btnLimparRotas');
+const btnAdicionarGasto = document.getElementById('btnAdicionarGasto');
+const btnLimparTudo = document.getElementById('btnLimparTudo');
 const inputFoto = document.getElementById('inputFoto');
 const areaFoto = document.getElementById('areaFoto');
+const corpoTabelaGastos = document.getElementById('corpoTabelaGastos');
 
 let mapa;
 let controleRota;
 let camadaServicos = [];
+let listaDeGastosPlanilha = [];
 
-// Valores de simulação financeira (Você pode alterar se quiser)
-const PRECO_LITRO_GASOLINA = 5.80; 
-const CONSUMO_CARRO_KM_L = 10; // Carro faz 10km por litro
-const PRECO_MEDIO_PEDAGIO_POR_100KM = 12.50; 
+// Parâmetros de cálculo de viagem (Altere se achar necessário)
+const PRECO_GASOLINA = 5.85;
+const KM_POR_LITRO = 10;
+const TAXA_PEDAGIO_POR_100KM = 14.00;
 
 function inicializarMapa() {
-    mapa = L.map('mapa').setView([-23.5505, -46.6333], 11);
+    mapa = L.map('mapa').setView([-19.9167, -43.9345], 6); // Foca na região central do Brasil
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
     }).addTo(mapa);
 
-    // Carrega a rota anterior caso o usuário dê F5
-    const ultimaOrigem = localStorage.getItem('ultimaOrigem');
-    const ultimoDestino = localStorage.getItem('ultimoDestino');
-    if (ultimaOrigem && ultimoDestino) {
-        document.getElementById('inputOrigem').value = ultimaOrigem;
-        document.getElementById('inputDestino').value = ultimoDestino;
-        processarRota(ultimaOrigem, ultimoDestino);
-    }
+    // Carrega dados anteriores salvos para o usuário não perder nada no F5
+    carregarDadosLocalStorage();
 }
 
-// Evento do botão Calcular Rota
 btnCalcular.addEventListener('click', function() {
-    const origem = document.getElementById('inputOrigem').value;
-    const destino = document.getElementById('inputDestino').value;
+    const orig = document.getElementById('inputOrigem').value;
+    const parada = document.getElementById('inputParada').value;
+    const dest = document.getElementById('inputDestino').value;
 
-    if (!origem || !destino) {
-        alert("Por favor, digite a origem e o destino!");
+    if (!orig || !parada || !dest) {
+        alert("Preencha a Origem, a Parada e o Destino!");
         return;
     }
 
-    // Salva no LocalStorage para não sumir ao atualizar
-    localStorage.setItem('ultimaOrigem', origem);
-    localStorage.setItem('ultimoDestino', destino);
+    localStorage.setItem('origTxt', orig);
+    localStorage.setItem('paradaTxt', parada);
+    localStorage.setItem('destTxt', dest);
 
-    processarRota(origem, destino);
+    calcularRotaComParada(orig, parada, dest);
 });
 
-// Transforma o texto digitado em coordenadas e traça a rota pelas ruas
-async function processarRota(origemTxt, destinoTxt) {
+async function calcularRotaComParada(orig, parada, dest) {
     try {
-        // Remove rota antiga se houver
-        if (controleRota) {
-            mapa.removeControl(controleRota);
-        }
+        if (controleRota) { mapa.removeControl(controleRota); }
 
-        // Busca as coordenadas da Origem na internet
-        const resOrigem = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(origemTxt)}`);
-        const dadosOrigem = await resOrigem.json();
+        // Busca coordenadas na internet para os 3 pontos
+        const coordOrig = await buscarCoordenada(orig);
+        const coordParada = await buscarCoordenada(parada);
+        const coordDest = await buscarCoordenada(dest);
 
-        // Busca as coordenadas do Destino na internet
-        const resDestino = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destinoTxt)}`);
-        const dadosDestino = await resDestino.json();
-
-        if (dadosOrigem.length === 0 || dadosDestino.length === 0) {
-            alert("Não encontramos um dos endereços digitados. Tente digitar Cidade e Estado.");
+        if (!coordOrig || !coordParada || !coordDest) {
+            alert("Não foi possível encontrar um dos destinos digitados. Confira a grafia.");
             return;
         }
 
-        const latLngOrigem = L.latLng(dadosOrigem[0].lat, dadosOrigem[0].lon);
-        const latLngDestino = L.latLng(dadosDestino[0].lat, dadosDestino[0].lon);
-
-        // Cria o traçado da rota real de trânsito no mapa
+        // Desenha a rota ligando Ponto A -> Ponto B -> Ponto C pelas estradas
         controleRota = L.Routing.control({
-            waypoints: [latLngOrigem, latLngDestino],
-            router: L.Routing.osrmv1({
-                serviceUrl: `https://router.project-osrm.org/route/v1`
-            }),
-            createMarker: function() { return null; } // Oculta marcadores padrão feios do plugin
+            waypoints: [coordOrig, coordParada, coordDest],
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            createMarker: function() { return null; }
         }).on('routesfound', function(e) {
             const rota = e.routes[0];
-            const distanciaKm = rota.summary.totalDistance / 1000; // Converte metros para KM
+            const kmTotais = rota.summary.totalDistance / 1000;
             
-            exibirEcalcularCustos(distanciaKm);
+            exibirCustosViagem(kmTotais);
         }).addTo(mapa);
 
-    } catch (erro) {
-        console.error(erro);
-        alert("Erro de conexão ao calcular rota.");
+    } catch (err) {
+        alert("Erro ao traçar rota.");
     }
 }
 
-// Faz as contas matemáticas de Gasolina, Pedágio e Total
-function exibirEcalcularCustos(km) {
+async function buscarCoordenada(texto) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(texto)}`);
+    const dados = await res.json();
+    if (dados && dados.length > 0) {
+        return L.latLng(dados[0].lat, dados[0].lon);
+    }
+    return null;
+}
+
+function exibirCustosViagem(km) {
     document.getElementById('painelCustos').style.display = 'block';
     document.getElementById('txtDistancia').innerText = km.toFixed(1) + " km";
 
-    // Cálculo da Gasolina
-    const litrosNecessarios = km / CONSUMO_CARRO_KM_L;
-    const custoGasolina = litrosNecessarios * PRECO_LITRO_GASOLINA;
+    const custoGasolina = (km / KM_POR_LITRO) * PRECO_GASOLINA;
     document.getElementById('txtGasolina').innerText = "R$ " + custoGasolina.toFixed(2);
 
-    // Cálculo aproximado de Pedágios por distância comercial
-    const custoPedagio = (km / 100) * PRECO_MEDIO_PEDAGIO_POR_100KM;
+    const custoPedagio = (km / 100) * TAXA_PEDAGIO_POR_100KM;
     document.getElementById('txtPedagio').innerText = "R$ " + custoPedagio.toFixed(2);
-
-    // Custo Total
-    const custoTotal = custoGasolina + custoPedagio;
-    document.getElementById('txtTotal').innerText = "R$ " + custoTotal.toFixed(2);
 }
 
 // ==========================================
-// APAGAR TUDO (REDEFINIR)
+// GERENCIADOR DA PLANILHA DE GASTOS DIÁRIOS
 // ==========================================
-btnLimparRotas.addEventListener('click', function() {
-    localStorage.removeItem('ultimaOrigem');
-    localStorage.removeItem('ultimoDestino');
-    alert("Dados de rotas apagados!");
-    location.reload();
+btnAdicionarGasto.addEventListener('click', function() {
+    const h = parseFloat(document.getElementById('gastoHotel').value) || 0;
+    const r = parseFloat(document.getElementById('gastoRestaurante').value) || 0;
+    const p = parseFloat(document.getElementById('gastoPosto').value) || 0;
+
+    if (h === 0 && r === 0 && p === 0) {
+        alert("Digite um valor em pelo menos um dos campos de gastos.");
+        return;
+    }
+
+    const novoGastoItem = { hotel: h, restaurante: r, posto: p };
+    listaDeGastosPlanilha.push(novoGastoItem);
+
+    // Salva a lista atualizada
+    localStorage.setItem('listaGastosPlanilha', JSON.stringify(listaDeGastosPlanilha));
+
+    // Limpa os campos de digitação
+    document.getElementById('gastoHotel').value = "";
+    document.getElementById('gastoRestaurante').value = "";
+    document.getElementById('gastoPosto').value = "";
+
+    renderizarTabelaPlanilha();
 });
 
+function renderizarTabelaPlanilha() {
+    corpoTabelaGastos.innerHTML = "";
+    let somaTotalFérias = 0;
+
+    listaDeGastosPlanilha.forEach((gasto, index) => {
+        const totalDoDia = gasto.hotel + gasto.restaurante + gasto.posto;
+        somaTotalFérias += totalDoDia;
+
+        const novaLinha = document.createElement('tr');
+        novaLinha.innerHTML = `
+            <td>Dia ${index + 1}</td>
+            <td>R$ ${gasto.hotel.toFixed(2)}</td>
+            <td>R$ ${gasto.restaurante.toFixed(2)}</td>
+            <td>R$ ${gasto.posto.toFixed(2)}</td>
+            <strong><td>R$ ${totalDoDia.toFixed(2)}</td></strong>
+        `;
+        corpoTabelaGastos.appendChild(novaLinha);
+    });
+
+    document.getElementById('txtTotalGeral').innerText = "R$ " + somaTotalFérias.toFixed(2);
+}
+
 // ==========================================
-// BUSCA DE SERVIÇOS PROXIMOS NO MAPA
+// BUSCADOR DE SERVIÇOS NA ÁREA DO MAPA
 // ==========================================
 function buscarServico(tipo) {
     camadaServicos.forEach(m => mapa.removeLayer(m));
     camadaServicos = [];
-
     const centro = mapa.getCenter();
     let nome = "", emoji = "";
     if(tipo==='restaurant'){nome="Restaurante"; emoji="🍽️";}
-    if(tipo==='hotel'){nome="Hotel"; emoji="🏨";}
-    if(tipo==='gas_station'){nome="Posto"; emoji="⛽";}
+    if(tipo==='hotel'){nome="Hotel/Pousada"; emoji="🏨";}
+    if(tipo==='gas_station'){nome="Posto de Gasolina"; emoji="⛽";}
 
     for (let i = 0; i < 4; i++) {
-        const lat = centro.lat + (Math.random() - 0.5) * 0.02;
-        const lng = centro.lng + (Math.random() - 0.5) * 0.02;
-        const m = L.marker([lat, lng]).addTo(mapa).bindPopup(`<b>${emoji} ${nome} encontrado!</b>`);
-        camadaServicos.push(m);
+        const lat = centro.lat + (Math.random() - 0.5) * 0.04;
+        const lng = centro.lng + (Math.random() - 0.5) * 0.04;
+        const marker = L.marker([lat, lng]).addTo(mapa).bindPopup(`<b>${emoji} ${nome} encontrado!</b>`);
+        camadaServicos.push(marker);
     }
+    alert(`Buscando ${nome}s ao redor da visão atual do mapa!`);
 }
 
 // ==========================================
-// CONTROLE DE FOTOS DO ANEXO
+// NAVEGAÇÃO DE IMAGENS E LOCALSTORAGE
 // ==========================================
-function exibirImagem(uri) {
-    if (uri) { areaFoto.src = uri; areaFoto.style.display = 'block'; }
-    else { areaFoto.src = ""; areaFoto.style.display = 'none'; }
+function carregarDadosLocalStorage() {
+    // 1. Carrega Rota
+    const o = localStorage.getItem('origTxt');
+    const p = localStorage.getItem('paradaTxt');
+    const d = localStorage.getItem('destTxt');
+    if (o && p && d) {
+        document.getElementById('inputOrigem').value = o;
+        document.getElementById('inputParada').value = p;
+        document.getElementById('inputDestino').value = d;
+        calcularRotaComParada(o, p, d);
+    }
+
+    // 2. Carrega Planilha de Gastos
+    const g = localStorage.getItem('listaGastosPlanilha');
+    if (g) {
+        listaDeGastosPlanilha = JSON.parse(g);
+        renderizarTabelaPlanilha();
+    }
+
+    // 3. Carrega Foto
+    const f = localStorage.getItem('fotoSalva');
+    if (f) { areaFoto.src = f; areaFoto.style.display = 'block'; }
 }
+
 inputFoto.addEventListener('change', function(e) {
     const arquivo = e.target.files[0];
     if (arquivo) {
         const reader = new FileReader();
         reader.onload = function(event) {
             localStorage.setItem('fotoSalva', event.target.result);
-            exibirImagem(event.target.result);
+            areaFoto.src = event.target.result;
+            areaFoto.style.display = 'block';
         };
         reader.readAsDataURL(arquivo);
     }
 });
 document.getElementById('btnLimparFoto').addEventListener('click', function() {
-    localStorage.removeItem('fotoSalva'); exibirImagem("");
+    localStorage.removeItem('fotoSalva'); areaFoto.style.display = 'none';
 });
 
-window.addEventListener('load', function() {
-    exibirImagem(localStorage.getItem('fotoSalva'));
-    inicializarMapa();
+btnLimparTudo.addEventListener('click', function() {
+    localStorage.clear();
+    alert("Todos os registros apagados com sucesso!");
+    location.reload();
 });
+
+window.addEventListener('load', inicializarMapa);
